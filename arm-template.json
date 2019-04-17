@@ -1,0 +1,237 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namespaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of EventHub namespace"
+            },
+            "defaultValue": "[concat('eventhubs-', parameters('environmentType'))]"
+        },
+        "eventhubSku": {
+            "type": "string",
+            "allowedValues": [
+                "Basic",
+                "Standard"
+            ],
+            "metadata": {
+                "description": "The messaging tier for service Bus namespace"
+            },
+            "defaultValue": "Standard"
+        },
+        "skuCapacity": {
+            "type": "int",
+            "allowedValues": [
+                1,
+                2,
+                4
+            ],
+            "metadata": {
+                "description": "MessagingUnits for premium namespace"
+            },
+            "defaultValue": 1
+        },
+        "eventHubName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of Event Hub"
+            },
+            "defaultValue": "[concat(parameters('namespaceName'), '-hub')]"
+        },
+        "consumerGroupsNames": {
+            "type": "array",
+            "metadata": {
+                "description": "Name of the consumer groups (this may be needed to enable multiple consuming applications to use the same event hub)"
+            },
+            "defaultValue": [
+                "analytics",
+                "product"
+            ]
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure region where the Event Hub and related resources will be deployed."
+            }
+        },
+        "checkpointsStorageAccount": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the storage account used to store checkpoints and lease details."
+            },
+            "defaultValue": "[concat('eventhubs', toLower(parameters('environmentType')), substring(uniqueString(resourceGroup().id, deployment().name), 0, 8))]"
+        },
+        "environmentType": {
+            "type": "string",
+            "metadata": {
+                "description": "The type of environment this Event Hub is for."
+            },
+            "allowedValues": [
+                "Dev",
+                "Test",
+                "QA",
+                "Repro",
+                "Staging",
+                "Prod"
+            ]
+        }
+    },
+    "variables": {
+        "consumerKeyName": "RootManageSharedAccessKey",
+        "consumerAuthRuleId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('namespaceName'), variables('consumerKeyName'))]",
+        "producerKeyName": "SenderAccessKey",
+        "producerAuthRuleId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('namespaceName'), variables('producerKeyName'))]",
+        "copy": [
+            {
+                "name": "blobContainerNames",
+                "count": "[length(parameters('consumerGroupsNames'))]",
+                "input": "[concat(parameters('eventHubName'), '-', parameters('consumerGroupsNames')[copyIndex('blobContainerNames')])]"
+            }
+        ],
+        "checkpointsStorageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('checkpointsStorageAccount'))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-04-01",
+            "name": "[parameters('namespaceName')]",
+            "type": "Microsoft.EventHub/namespaces",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "[parameters('eventhubSku')]",
+                "tier": "[parameters('eventhubSku')]",
+                "capacity": "[parameters('skuCapacity')]"
+            },
+            "properties": {},
+            "resources": [
+                {
+                    "apiVersion": "2017-04-01",
+                    "name": "[parameters('eventHubName')]",
+                    "type": "eventhubs",
+                    "properties": {
+                        "messageRetentionInDays": 1,
+                        "partitionCount": 2,
+                        "status": "Active"
+                    },
+                    "dependsOn": [
+                        "[concat('Microsoft.EventHub/namespaces/', parameters('namespaceName'))]"
+                    ]
+                }
+            ],
+            "tags": {
+                "Environment": "[parameters('environmentType')]"
+            }
+        },
+        {
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('namespaceName'), '/', parameters('eventHubName'), '/', parameters('consumerGroupsNames')[copyIndex('consumerGroups')])]",
+            "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+            "copy": {
+                "name": "consumerGroups",
+                "count": "[length(parameters('consumerGroupsNames'))]"
+            },
+            "properties": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('namespaceName'), parameters('eventHubName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('namespaceName'), '/', variables('consumerKeyName'))]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "rights": [
+                    "Listen",
+                    "Manage",
+                    "Send"
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('namespaceName'), '/', variables('producerKeyName'))]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "rights": [
+                    "Send"
+                ]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('checkpointsStorageAccount')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "enabled": true
+                        },
+                        "blob": {
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            },
+            "tags": {
+                "Environment": "[parameters('environmentType')]"
+            }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "name": "[concat(parameters('checkpointsStorageAccount'), '/default/', parameters('consumerGroupsNames')[copyIndex('blobContainers')])]",
+            "copy": {
+                "name": "blobContainers",
+                "count": "[length(parameters('consumerGroupsNames'))]"
+            },
+            "properties": {
+                "publicAccess": "None"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('checkpointsStorageAccount'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "eventhubProducerConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('producerAuthRuleId'), '2017-04-01').primaryConnectionString]"
+        },
+        "eventhubConsumerConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('consumerAuthRuleId'), '2017-04-01').primaryConnectionString]"
+        },
+        "checkpointsBlobContainerNames": {
+            "type": "array",
+            "value": "[variables('blobContainerNames')]"
+        },
+        "storageConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('checkpointsStorageAccount'), ';AccountKey=', listKeys(variables('checkpointsStorageAccountId'),'2018-11-01').keys[0].value)]"
+        }
+    }
+}

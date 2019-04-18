@@ -1,7 +1,7 @@
 variable "namespace_name" {
   description = "Name of the Event Hubs namespace"
   type        = "string"
-  default     = "eventhubs-ns"
+  default     = ""
 }
 
 variable "location" {
@@ -39,7 +39,7 @@ variable "environment" {
 variable "eventhub_name" {
   description = "Name of Event Hub"
   type        = "string"
-  default     = "eventhub"
+  default     = ""
 }
 
 variable "hub_partition_count" {
@@ -50,26 +50,4 @@ variable "hub_partition_count" {
 variable "message_retention_in_days" {
   description = "Number of days to retain the events for this Event Hub. Value should be from 1 to 7 days"
   default     = 1
-}
-
-variable "consumer_access_policy_name" {
-  description = "Name of the shared access policy for consumers"
-  default     = "RootManageSharedAccessKey"
-}
-
-variable "consumer_access_policy_rights" {
-  description = "The set of permissions (in 'listen', 'manage', 'send') associated with the consumer access policy"
-  type        = "list"
-  default     = ["listen", "manage", "send"]
-}
-
-variable "producer_access_policy_name" {
-  description = "Name of the shared access policy for producers"
-  default     = "SenderAccessKey"
-}
-
-variable "producer_access_policy_rights" {
-  description = "The set of permissions (in 'listen', 'manage', 'send') associated with the producer access policy"
-  type        = "list"
-  default     = ["send"]
 }

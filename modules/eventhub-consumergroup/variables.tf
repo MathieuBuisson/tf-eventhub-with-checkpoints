@@ -1,6 +1,6 @@
-variable "consumer_group_name" {
-  description = "Name of the Event Hubs consumer group"
-  type        = "string"
+variable "consumer_group_names" {
+  description = "List of consumer groups to deploy"
+  type        = "list"
 }
 
 variable "resource_group_name" {

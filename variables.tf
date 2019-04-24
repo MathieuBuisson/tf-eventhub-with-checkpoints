@@ -25,3 +25,9 @@ variable "eventhub_name" {
   type        = "string"
   default     = ""
 }
+
+variable "consumergroup_names" {
+  description = "List of consumer groups to deploy"
+  type        = "list"
+  default     = ["analytics", "product"]
+}

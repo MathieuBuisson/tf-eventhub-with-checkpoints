@@ -27,3 +27,17 @@ module "producer-access-policy" {
   eventhub_name       = "${module.eventhub.eventhub_name}"
   access_type         = "producer"
 }
+
+module "consumergroups" {
+  source               = "./modules/eventhub-consumergroup"
+  consumer_group_names = "${var.consumergroup_names}"
+  resource_group_name  = "${azurerm_resource_group.rg.name}"
+  namespace_name       = "${module.eventhub.namespace_name}"
+  eventhub_name        = "${module.eventhub.eventhub_name}"
+}
+
+module "storage" {
+  source              = "./modules/storage"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  blob_containers     = "${var.consumergroup_names}"
+}

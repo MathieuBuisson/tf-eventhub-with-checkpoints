@@ -37,7 +37,10 @@ module "consumergroups" {
 }
 
 module "storage" {
-  source              = "./modules/storage"
-  resource_group_name = "${azurerm_resource_group.rg.name}"
-  blob_containers     = "${var.consumergroup_names}"
+  source               = "./modules/storage"
+  resource_group_name  = "${azurerm_resource_group.rg.name}"
+  location             = "${azurerm_resource_group.rg.location}"
+  storage_account_name = "${var.storage_account_name}"
+  environment          = "${var.environment}"
+  blob_containers      = "${var.consumergroup_names}"
 }

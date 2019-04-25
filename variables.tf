@@ -31,3 +31,8 @@ variable "consumergroup_names" {
   type        = "list"
   default     = ["analytics", "product"]
 }
+
+variable "storage_account_name" {
+  description = "Name of the storage account"
+  type        = "string"
+}

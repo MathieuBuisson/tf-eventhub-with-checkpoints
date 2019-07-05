@@ -1,22 +1,22 @@
 variable "namespace_name" {
   description = "Name of the Event Hubs namespace"
-  type        = "string"
+  type        = string
   default     = ""
 }
 
 variable "location" {
   description = "Azure region where the Event Hubs namespace will be located"
-  type        = "string"
+  type        = string
 }
 
 variable "resource_group_name" {
   description = "Name of the resource group where the Event Hubs namespace will be deployed"
-  type        = "string"
+  type        = string
 }
 
 variable "sku_tier" {
   description = "The messaging tier for service Bus namespace"
-  type        = "string"
+  type        = string
   default     = "Standard"
 }
 
@@ -32,13 +32,13 @@ variable "kafka_enabled" {
 
 variable "environment" {
   description = "The type of environment this Event Hub is for"
-  type        = "string"
+  type        = string
   default     = "Dev"
 }
 
 variable "eventhub_name" {
   description = "Name of Event Hub"
-  type        = "string"
+  type        = string
   default     = ""
 }
 
@@ -51,3 +51,4 @@ variable "message_retention_in_days" {
   description = "Number of days to retain the events for this Event Hub. Value should be from 1 to 7 days"
   default     = 1
 }
+

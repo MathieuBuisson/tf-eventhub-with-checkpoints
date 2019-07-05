@@ -1,16 +1,16 @@
 variable "storage_account_name" {
   description = "Name of the storage account"
-  type        = "string"
+  type        = string
 }
 
 variable "resource_group_name" {
   description = "Name of the resource group where the storage account will be deployed"
-  type        = "string"
+  type        = string
 }
 
 variable "location" {
   description = "Azure region where the storage account will be located"
-  type        = "string"
+  type        = string
 }
 
 variable "storage_account_tier" {
@@ -50,15 +50,16 @@ variable "https_only" {
 
 variable "environment" {
   description = "The type of environment this storage is for"
-  type        = "string"
+  type        = string
 }
 
 variable "blob_containers" {
   description = "List of blob storage containers to create within the storage account"
-  type        = "list"
+  type        = list(string)
 }
 
 variable "container_access_type" {
   description = "Type of access the container provides. Can be either : 'blob', 'container', or 'private'"
   default     = "private"
 }
+
